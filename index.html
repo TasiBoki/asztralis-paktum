@@ -155,7 +155,6 @@
         async function checkStatusAndRender(isInitial = false) {
             const user = getStoredUser();
             
-            // Ha nincsenek elmentett adatok, mindenképpen az azonosító (login) képernyőre jön
             if (!user.username || !user.phone) {
                 if (currentViewMode !== 'login') {
                     renderLoginView();
@@ -170,15 +169,12 @@
                 if (data.status === 'banned') {
                     renderBannedView(user.username, user.phone);
                 } else if (data.status === 'none') {
-                    // Ha a lokális tárban van név/telefon, de a szerver szerint még nincs adat (pl. törölve lett),
-                    // akkor kérjük meg újra a bejelentkezésre.
                     localStorage.removeItem('sors_username');
                     localStorage.removeItem('sors_phone');
                     if (currentViewMode !== 'login') {
                         renderLoginView();
                     }
                 } else if (data.status === 'expired') {
-                    // Ha lejárt az idő, töröljük a lokális adatot, és dobjuk át a bejelentkezőre egy üzenettel
                     localStorage.removeItem('sors_username');
                     localStorage.removeItem('sors_phone');
                     if (currentViewMode !== 'login') {
@@ -201,7 +197,6 @@
             }
         }
 
-        // 1. LÉPÉS: AZONOSÍTÓ / BELÉPÉS NÉZET (Csak név és telefonszám)
         function renderLoginView(noticeMessage = '') {
             if (countdownTimer) clearInterval(countdownTimer);
             currentViewMode = 'login';
@@ -241,7 +236,6 @@
             `;
         }
 
-        // Ellenőrzi a megadott név/telefont, és a státusz alapján irányít
         async function handleLoginAttempt() {
             const usernameInput = document.getElementById('login-username');
             const phoneInput = document.getElementById('login-phone');
@@ -258,7 +252,6 @@
                 return;
             }
 
-            // Elmentjük ideiglenesen
             localStorage.setItem('sors_username', username);
             localStorage.setItem('sors_phone', phone);
 
@@ -271,10 +264,8 @@
                 } else if (data.status === 'rejected') {
                     renderRejectedView(username, phone, data.reject_reason);
                 } else if (data.status === 'active') {
-                    // Ha van aktív paktuma, irány a visszaszámláló!
                     renderActiveView(username, phone, data.expires_at);
                 } else {
-                    // Ha status 'none' vagy 'expired', akkor ez egy új kívánságküldési alkalom!
                     renderWishFormView(username, phone, data.status === 'expired');
                 }
             } catch (err) {
@@ -286,7 +277,6 @@
             }
         }
 
-        // 2. LÉPÉS: KÍVÁNSÁG BEKÜLDÖ FELÜLET (Csak akkor látszik, ha nincs aktív paktuma)
         function renderWishFormView(username, phone, wasExpired = false) {
             if (countdownTimer) clearInterval(countdownTimer);
             currentViewMode = 'wish-form';
@@ -310,13 +300,11 @@
                 </div>
 
                 <div class="space-y-4">
-                    <!-- ÍROTT KÍVÁNSÁG MEZŐ -->
                     <div id="input-section-text">
                         <label class="block text-[11px] uppercase font-mono tracking-widest text-purple-400 mb-1.5">A kívánságod (Szöveg)</label>
                         <textarea id="wish" rows="4" class="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-purple-500 text-sm transition resize-none" placeholder="Fogalmazd meg tisztán és tiszta szívből..."></textarea>
                     </div>
 
-                    <!-- VIDEÓS KÍVÁNSÁG MEZŐ (Alapból rejtett) -->
                     <div id="input-section-video" class="hidden space-y-3">
                         <label class="block text-[11px] uppercase font-mono tracking-widest text-purple-400 mb-1.5">Kamerás Felvétel</label>
                         <div class="relative rounded-xl overflow-hidden border border-purple-500/30 bg-black aspect-video flex items-center justify-center">
@@ -578,6 +566,15 @@
             if (countdownTimer) clearInterval(countdownTimer);
             resumeMusicAfterVideo();
             renderLoginView();
+        }
+
+        // --- SERVICE WORKER REGISZTRÁCIÓ A PWA-HOZ ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((reg) => console.log('Service Worker sikeresen regisztrálva!', reg))
+                    .catch((err) => console.log('Service Worker regisztrációs hiba:', err));
+            });
         }
     </script>
 </body>
