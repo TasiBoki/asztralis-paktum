@@ -173,6 +173,12 @@ def get_icon_512():
         return FileResponse("icon-512.png", media_type="image/png")
     raise HTTPException(status_code=404, detail="Ikon nem található")
 
+@app.get("/sw.js")
+def get_service_worker():
+    if os.path.exists("sw.js"):
+        return FileResponse("sw.js", media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="Service Worker nem található")
+
 
 # ==========================================
 # GYÖKÉR ÉS ADMIN ÚTVONALAK (HTML kiszolgálás)
