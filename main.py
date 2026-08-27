@@ -3,7 +3,7 @@ import os
 import re
 import shutil
 from fastapi import FastAPI, Depends, HTTPException, File, Form, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 from sqlmodel import Field, SQLModel, Session, create_engine, select
@@ -106,6 +106,17 @@ def apply_chain_boost(session: Session):
             predecessor.expires_at = predecessor.expires_at + timedelta(hours=7)
             predecessor.boosted = True
             session.add(predecessor)
+
+# ==========================================
+# GYÖKÉR ÚTVONAL (index.html kiszolgálása)
+# ==========================================
+@app.get("/", response_class=HTMLResponse)
+def read_root():
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    else:
+        return "<h3>Az Asztrális Paktum szerver fut, de az index.html fájl nem található a gyökérben!</h3>"
 
 @app.post("/submit-wish")
 def submit_wish(data: WishRequest, session: Session = Depends(get_session)):
