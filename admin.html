@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AZ UNIVERZUM // ADMIN MODERÁCIÓ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #030712; color: #f8fafc; }
+        .cyber-font { font-family: 'Orbitron', sans-serif; }
+        .cyber-box { background: rgba(3, 7, 18, 0.9); border: 1px solid rgba(147, 51, 234, 0.3); }
+    </style>
+</head>
+<body class="p-6 max-w-6xl mx-auto">
+
+    <div class="flex justify-between items-center mb-8 pb-4 border-b border-purple-500/30">
+        <div>
+            <h1 class="cyber-font text-2xl font-black text-purple-400">UNIVERZUM ADMIN</h1>
+            <p class="text-xs font-mono text-slate-400">Paktumok és Videós Üzenetek Moderálása</p>
+        </div>
+        <button onclick="loadWishes()" class="bg-purple-900/60 border border-purple-500/40 hover:bg-purple-800 text-purple-200 text-xs font-mono px-4 py-2 rounded-lg transition cursor-pointer">🔄 Frissítés</button>
+    </div>
+
+    <div id="wishes-container" class="space-y-4">
+        <div class="text-center font-mono text-xs text-slate-500 py-10">Adatok betöltése...</div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+
+        async function loadWishes() {
+            const container = document.getElementById('wishes-container');
+            try {
+                const res = await fetch(`${API_URL}/admin/all-wishes`);
+                const wishes = await res.json();
+
+                if (wishes.length === 0) {
+                    container.innerHTML = `<div class="text-center font-mono text-xs text-slate-500 py-10">Nincs még beküldött paktum.</div>`;
+                    return;
+                }
+
+                container.innerHTML = '';
+                wishes.forEach(w => {
+                    let statusColor = w.status === 'active' ? 'text-green-400 bg-green-950/40 border-green-500/30' :
+                                      w.status === 'rejected' ? 'text-red-400 bg-red-950/40 border-red-500/30' :
+                                      w.status === 'banned' ? 'text-red-600 bg-red-950/80 border-red-600' : 'text-amber-400 bg-amber-950/40 border-amber-500/30';
+
+                    let contentHtml = '';
+                    if (w.video_path) {
+                        contentHtml = `
+                            <div class="mt-3 space-y-2">
+                                <div class="text-[10px] font-mono text-purple-400 uppercase">Videós Üzenet:</div>
+                                <video src="${API_URL}/admin/watch-video/${w.id}" controls class="w-full max-w-sm rounded-lg border border-slate-800 bg-black aspect-video"></video>
+                            </div>
+                        `;
+                    } else {
+                        contentHtml = `
+                            <div class="mt-2 p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 italic">
+                                "${w.wish}"
+                            </div>
+                        `;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = "cyber-box rounded-2xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4";
+                    card.innerHTML = `
+                        <div class="space-y-1.5 flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="cyber-font text-sm font-bold text-slate-100">${w.username}</span>
+                                <span class="text-xs font-mono text-slate-400">(${w.phone})</span>
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${statusColor}">${w.status.toUpperCase()}</span>
+                            </div>
+                            ${contentHtml}
+                        </div>
+                        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                            <button onclick="archiveEvidence(${w.id})" class="bg-blue-950/60 border border-blue-500/40 hover:bg-blue-900 text-blue-300 text-xs font-mono px-3 py-2 rounded-lg transition cursor-pointer" title="Bizonyíték mentése hatóságnak">💾 Mentés / Archív</button>
+                            <button onclick="rejectWish(${w.id})" class="bg-amber-950/60 border border-amber-500/40 hover:bg-amber-900 text-amber-300 text-xs font-mono px-3 py-2 rounded-lg transition cursor-pointer">⚠️ Elutasítás</button>
+                            <button onclick="banUser(${w.id})" class="bg-red-950/60 border border-red-500/40 hover:bg-red-900 text-red-300 text-xs font-mono px-3 py-2 rounded-lg transition cursor-pointer">⛔ Letiltás</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (err) {
+                container.innerHTML = `<div class="text-center font-mono text-xs text-red-400 py-10">Nem sikerült betölteni az adatokat a szerverről.</div>`;
+            }
+        }
+
+        async function archiveEvidence(id) {
+            const res = await fetch(`${API_URL}/admin/archive/${id}`, { method: 'POST' });
+            const data = await res.json();
+            alert(data.message + (data.data.archived_video_copy ? `\nVideó másolva ide: ${data.data.archived_video_copy}` : ''));
+        }
+
+        async function rejectWish(id) {
+            const reason = prompt("Add meg az elutasítás okát:");
+            if (!reason) return;
+            await fetch(`${API_URL}/admin/reject/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+            loadWishes();
+        }
+
+        async function banUser(id) {
+            if (!confirm("Biztosan véglegesen letiltod ezt a felhasználót?")) return;
+            await fetch(`${API_URL}/admin/ban/${id}`, { method: 'POST' });
+            loadWishes();
+        }
+
+        loadWishes();
+    </script>
+</body>
+</html>
