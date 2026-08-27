@@ -135,6 +135,7 @@ def get_manifest():
         "short_name": "Asztrális Paktum",
         "start_url": "/",
         "display": "standalone",
+        "display_override": ["window-controls-overlay", "standalone"],
         "background_color": "#030712",
         "theme_color": "#030712",
         "icons": [
@@ -147,6 +148,12 @@ def get_manifest():
                 "src": "/icon-512.png",
                 "sizes": "512x512",
                 "type": "image/png"
+            }
+        ],
+        "protocol_handlers": [
+            {
+                "protocol": "web+asztralis",
+                "url": "/?paktum=%s"
             }
         ]
     }
