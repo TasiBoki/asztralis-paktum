@@ -5,7 +5,7 @@ import re
 import shutil
 from fastapi import FastAPI, Depends, HTTPException, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel, field_validator
 from sqlmodel import Field, SQLModel, Session, create_engine, select
 
@@ -123,6 +123,48 @@ def apply_chain_boost(session: Session):
             predecessor.expires_at = predecessor.expires_at + timedelta(hours=7)
             predecessor.boosted = True
             session.add(predecessor)
+
+
+# ==========================================
+# PWA / MANIFEST ÉS IKONOK KISZOLGÁLÁSA
+# ==========================================
+@app.get("/manifest.json")
+def get_manifest():
+    manifest_data = {
+        "name": "Az Univerzum - Asztrális Paktum",
+        "short_name": "Asztrális Paktum",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#030712",
+        "theme_color": "#030712",
+        "icons": [
+            {
+                "src": "/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ]
+    }
+    return JSONResponse(content=manifest_data)
+
+
+@app.get("/icon-192.png")
+def get_icon_192():
+    if os.path.exists("icon-192.png"):
+        return FileResponse("icon-192.png", media_type="image/png")
+    raise HTTPException(status_code=404, detail="Ikon nem található")
+
+
+@app.get("/icon-512.png")
+def get_icon_512():
+    if os.path.exists("icon-512.png"):
+        return FileResponse("icon-512.png", media_type="image/png")
+    raise HTTPException(status_code=404, detail="Ikon nem található")
 
 
 # ==========================================
